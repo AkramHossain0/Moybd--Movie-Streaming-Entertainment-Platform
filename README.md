@@ -1,4 +1,3 @@
-Here’s your updated `README.md` file with **"Movie App"** changed to **"Moybd"** throughout the document:
 
 ---
 
@@ -52,7 +51,7 @@ Moybd/
 ### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/AkramHossain0/Moybd--Movie-Streaming-Entertainment-Platform
 cd Moybd
 ```
 
