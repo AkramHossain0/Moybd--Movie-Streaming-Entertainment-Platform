@@ -20,7 +20,7 @@ export const metadata = {
     "Discover the latest movies, reviews, trailers, and entertainment news on MOYBD. Stay updated with trending content, explore a world of cinema, and enjoy seamless browsing tailored for movie enthusiasts.",
   keywords:
     "movies, entertainment, movie reviews, latest trailers, trending movies, cinema, Hollywood, Bollywood, streaming, entertainment news, free movies, HD movies, movie downloads, Netflix, Amazon Prime, Disney+, Hulu, latest blockbusters, top-rated movies, award-winning films, celebrity news, showbiz, box office hits, TV shows, binge-watch, OTT platforms, movie streaming, web series, 4K movies, animated movies, action movies, romantic comedies, thriller movies, sci-fi films, horror movies, family movies, kids movies, classic films, documentary movies, movie ratings, IMDb, Rotten Tomatoes, streaming platforms, upcoming releases, movie blogs, entertainment gossip, popular TV series, series reviews, latest episodes, fan theories, behind the scenes, casting news, film festivals, Cannes, Oscars, film industry, top grossing movies, regional cinema, Tamil movies, Telugu movies, Korean dramas, anime movies, subbed movies, dubbed movies, movie trailers 2025, must-watch movies, trending now.",
-  author: "Akram Hossain, Minhajul Islam and AI",
+  author: "Akram Hossain",
   robots: "index, follow",
   ogTitle: "MOYBD: Your Ultimate Destination for Movies and Entertainment",
   ogDescription:
