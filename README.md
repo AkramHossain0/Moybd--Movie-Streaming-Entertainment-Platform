@@ -52,7 +52,6 @@ Moybd/
 
 ```bash
 git clone https://github.com/AkramHossain0/Moybd--Movie-Streaming-Entertainment-Platform
-cd Moybd
 ```
 
 ### 2. Install Dependencies
