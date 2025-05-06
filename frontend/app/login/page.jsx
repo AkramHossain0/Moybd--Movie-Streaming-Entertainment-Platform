@@ -1,16 +1,24 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../component/Navber';
 import Footer from '../component/footer';
 import Input from '../component/Input';
 import { EmailIcon, LockIcon, MovieIcon, ArrowIcon } from '../component/icons';
-import Cookies from 'js-cookie';
+import crypto from 'crypto';
+
+const decryptAES = (encrypted, secret, iv) => {
+  const key = crypto.createHash('sha256').update(secret).digest();
+  const decipher = crypto.createDecipheriv('aes-256-cbc', key, Buffer.from(iv, 'hex'));
+  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+};
+
+const AES_SECRET = process.env.NEXT_PUBLIC_AES_SECRET; 
 
 function Page() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userRole, setUserRole] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -33,33 +41,28 @@ function Page() {
         body: JSON.stringify({ email, password }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      const data = await response.json();
 
-        setIsLoggedIn(true);
-        setUserRole(data.user.role);
-
-        if (rememberMe) {
-          Cookies.set('isLoggedIn', 'true', { expires: 7 });
-          Cookies.set('userRole', data.user.role, { expires: 7 });
-          Cookies.set('userId', data.user._id, { expires: 7 });
-          Cookies.set('name', data.user.name, { expires: 7 });
-        } else {
-          sessionStorage.setItem('isLoggedIn', 'true');
-          sessionStorage.setItem('userRole', data.user.role);
-          sessionStorage.setItem('userId', data.user._id);
-          sessionStorage.setItem('name', data.user.name);
-        }
-
-        if (data.user.role === 'admin') {
-          alert('Login successful!');
-          router.push('/'); 
-        } else {
-          alert('Login successful!');
-          router.push('/');
+      if (response.ok && data.success && data.token) {
+        try {
+          const decryptedToken = JSON.parse(
+            decryptAES(data.token.Data, AES_SECRET, data.token.iv)
+          );
+          if (decryptedToken.isLoggedIn === true) {
+            if (rememberMe) {
+              localStorage.setItem('isLoggedIn', 'true');
+            } else {
+              sessionStorage.setItem('isLoggedIn', 'true');
+            }
+            alert('Login successful!');
+            router.push('/');
+          } else {
+            setError('Login failed. Please try again.');
+          }
+        } catch (err) {
+          setError('Unable to decrypt login data.');
         }
       } else {
-        const data = await response.json();
         setError(data.message || 'Login failed. Please try again.');
       }
     } catch (err) {
@@ -69,17 +72,6 @@ function Page() {
       setIsSubmitting(false);
     }
   };
-
-  useEffect(() => {
-    const isLoggedIn =
-      Cookies.get('isLoggedIn') === 'true' || sessionStorage.getItem('isLoggedIn') === 'true';
-    const role = Cookies.get('userRole') || sessionStorage.getItem('userRole');
-
-    if (isLoggedIn) {
-      setIsLoggedIn(true);
-      setUserRole(role);
-    }
-  }, []);
 
   return (
     <div className="bg-black">
@@ -115,20 +107,20 @@ function Page() {
             {error && <p className="text-sm text-red-500">{error}</p>}
             <div className="flex items-center justify-between gap-1">
               <div className='flex items-center'>
-              <input
-                id="remember"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 text-red-500 rounded border-zinc-700 bg-zinc-800 focus:ring-red-500 focus:ring-offset-zinc-900"
-              />
-              <label htmlFor="remember" className="ml-2 text-sm text-zinc-400">
-                Remember me
-              </label>
+                <input
+                  id="remember"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 text-red-500 rounded border-zinc-700 bg-zinc-800 focus:ring-red-500 focus:ring-offset-zinc-900"
+                />
+                <label htmlFor="remember" className="ml-2 text-sm text-zinc-400">
+                  Remember me
+                </label>
               </div>
-                <a href="/forget" className="ml-1 text-red-500 hover:text-red-400">
-                  Forget Password?
-                </a>
+              <a href="/forget" className="ml-1 text-red-500 hover:text-red-400">
+                Forget Password?
+              </a>
             </div>
             <button
               type="submit"

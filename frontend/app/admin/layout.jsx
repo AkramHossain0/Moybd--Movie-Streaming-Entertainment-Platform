@@ -5,9 +5,19 @@ import Footer from '../component/Admin_Component/footer';
 import Nav from '../component/Admin_Component/Nav';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
+import crypto from 'crypto';
 import Link from 'next/link';
 import 'boxicons/css/boxicons.min.css';
+
+const decryptAES = (encrypted, secret, iv) => {
+  const key = crypto.createHash('sha256').update(secret).digest();
+  const decipher = crypto.createDecipheriv('aes-256-cbc', key, Buffer.from(iv, 'hex'));
+  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+};
+
+const AES_SECRET = process.env.NEXT_PUBLIC_AES_SECRET; // Make sure this matches your backend
 
 export default function Layout({ children }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -32,23 +42,25 @@ export default function Layout({ children }) {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.user.role === 'jmhub') {
-          setIsLoggedIn(true);
-          setUserRole('jmhub');
-          setError('');
-
-          if (rememberMe) {
-            Cookies.set('isLoggedIn', 'true', { expires: 7 });
-            Cookies.set('userRole', 'jmhub', { expires: 7 });
-          } else {
-            sessionStorage.setItem('isLoggedIn', 'true');
-            sessionStorage.setItem('userRole', 'jmhub');
+        if (data.success && data.token) {
+          try {
+            const decryptedToken = JSON.parse(
+              decryptAES(data.token.Data, AES_SECRET, data.token.iv)
+            );
+            if (decryptedToken.role === 'jmhub') {
+              setIsLoggedIn(true);
+              setUserRole('jmhub');
+              setError('');
+              alert('Login successful! Welcome back');
+              router.push('/admin');
+            } else {
+              alert('Access denied: Admins only');
+            }
+          } catch (err) {
+            setError('Unable to decrypt data');
           }
-
-          alert('Login successful! Welcome back');
-          router.push('/admin');
         } else {
-          alert('Access denied: Admins only');
+          setError(data.message || 'Login failed');
         }
       } else {
         const data = await response.json();
@@ -67,13 +79,7 @@ export default function Layout({ children }) {
   };
 
   useEffect(() => {
-    const isLoggedIn = Cookies.get('isLoggedIn') === 'true' || sessionStorage.getItem('isLoggedIn') === 'true';
-    const role = Cookies.get('userRole') || sessionStorage.getItem('userRole');
-
-    if (isLoggedIn && role === 'jmhub') {
-      setIsLoggedIn(true);
-      setUserRole(role);
-    }
+    // Add any necessary logic for checking login status if needed
   }, []);
 
   if (!isLoggedIn || userRole !== 'jmhub') {

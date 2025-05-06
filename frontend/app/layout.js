@@ -43,30 +43,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang={metadata.language}>
       <head>
-        <meta charSet="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link
           rel="icon"
           href="https://raw.githubusercontent.com/AkramHossain0/data/refs/heads/main/m.ico"
         />
-        <title>{metadata.title}</title>
-        <meta name="description" content={metadata.description} />
-        <meta name="keywords" content={metadata.keywords} />
-        <meta name="author" content={metadata.author} />
-        <meta name="robots" content={metadata.robots} />
-        <meta property="og:title" content={metadata.ogTitle} />
-        <meta property="og:description" content={metadata.ogDescription} />
-        <meta property="og:type" content={metadata.ogType} />
-        <meta property="og:url" content={metadata.ogUrl} />
-        <meta property="og:image" content={metadata.ogImage} />
-        <meta name="twitter:card" content={metadata.twitterCard} />
-        <meta name="twitter:title" content={metadata.twitterTitle} />
-        <meta
-          name="twitter:description"
-          content={metadata.twitterDescription}
-        />
-        <meta name="twitter:image" content={metadata.twitterImage} />
-        <link rel="canonical" href={metadata.canonical} />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

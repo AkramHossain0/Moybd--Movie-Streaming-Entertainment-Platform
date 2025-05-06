@@ -15,17 +15,14 @@ const Navbar = () => {
   const [showModal, setShowModal] = useState(false);
   const router = useRouter();
 
-  // Toggle mobile menu
   const toggleMenu = () => {
     setIsOpen(!isOpen);
   };
 
-  // Toggle dropdown menu
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
   };
 
-  // Fetch movies from the API
   useEffect(() => {
     const fetchMovies = async () => {
       setIsLoading(true);
@@ -48,7 +45,6 @@ const Navbar = () => {
     fetchMovies();
   }, []);
 
-  // Filter movies based on the search query
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       const results = movies.filter((movie) =>
@@ -59,7 +55,6 @@ const Navbar = () => {
     return () => clearTimeout(timeoutId);
   }, [searchQuery, movies]);
 
-  // Navigate to the movie details page
   const movieDetails = (slug) => {
     router.push(`/download/${slug}`);
   };
@@ -90,13 +85,14 @@ const Navbar = () => {
     setShowModal(true);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
+  const handleLogout = async () => {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+  
     localStorage.removeItem("isLoggedIn");
-    sessionStorage.removeItem("token");
     sessionStorage.removeItem("isLoggedIn");
-    Cookies.remove("token");
-    Cookies.remove("isLoggedIn");
     setIsLoggedIn(false);
     setShowModal(false);
     router.push("/");

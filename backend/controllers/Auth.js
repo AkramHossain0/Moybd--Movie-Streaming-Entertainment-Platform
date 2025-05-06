@@ -2,6 +2,8 @@ import User from "../models/user.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import nodemailer from 'nodemailer';
+import crypto from 'crypto';
+import { encryptAES } from './crypto.js';
 
 const Register = async (req, res) => {
     try {
@@ -94,21 +96,73 @@ const Login = async (req, res) => {
         }
 
         const isMatch = await bcrypt.compare(password, findUser.password);
-
         if (!isMatch) {
             return res.status(400).json({ success: false, message: "Invalid password" });
         }
 
-        const token = jwt.sign({ userId: findUser._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-        res.cookie('token', token, { httpOnly: true });
 
-        res.status(200).json({ success: true, message: 'User logged in successfully', user: findUser });
+        const sessionId = crypto.randomUUID();
+        const nonce = crypto.randomBytes(16).toString("hex");
+        const timestamp = Date.now().toString();
+        const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); 
+        
+        const encryptedSid = encryptAES(sessionId, timestamp);
+        const encryptedNonce = encryptAES(nonce, timestamp);
+        const encryptedUserId = encryptAES(findUser._id.toString(), timestamp);
+        const encryptedTimestamp = encryptAES(timestamp, timestamp);
+        const encryptedExpiresAt = encryptAES(expiresAt.toString(), timestamp);
+
+        const tokenPayload = JSON.stringify({
+            userId: findUser._id.toString(),
+            name: findUser.name,
+            email: findUser.email,
+            role: findUser.role,
+            iat: Date.now(),
+            exp: Date.now() + (7 * 24 * 60 * 60 * 1000),
+            sid: encryptedSid,
+            nonce: encryptedNonce,
+            timestamp: encryptedTimestamp,
+            expiresAt: encryptedExpiresAt,
+            encryptedUserId: encryptedUserId,
+            isLoggedIn: true
+        });
+
+        const secretKey = process.env.SECRET_KEY || 'your-fallback-secret-key';
+
+        const encryptedToken = encryptAES(tokenPayload, secretKey);
+
+
+        res.cookie('auth_token', encryptedToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'User logged in successfully',
+            token: encryptedToken,
+        });
     } catch (error) {
         console.error('Error during login', error);
         res.status(500).json({ error: 'Error during login' });
     }
 };
 
+const logout = async (req, res) => {
+    try {
+        res.clearCookie('auth_token', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+        });
+        res.status(200).json({ success: true, message: 'Logged out successfully' });
+    } catch (error) {
+        console.error('Error during logout', error);
+        res.status(500).json({ error: 'Error during logout' });
+    }
+};
 
 const forgotPassword = async (req, res) => {
     try {
@@ -153,5 +207,38 @@ const forgotPassword = async (req, res) => {
     }
 };
 
+const resetPassword = async (req, res) => {
+    try {
+        const { resetCode, newPassword } = req.body; 
 
-export { Register, Login, verify, forgotPassword };
+        if (!resetCode || !newPassword) {
+            return res.status(400).json({ success: false, message: "All fields are required" });
+        }
+        let email = null;
+        if (global.resetCodes) {
+            for (const [key, value] of Object.entries(global.resetCodes)) {
+                if (value === resetCode) {
+                    email = key;
+                    break;
+                }
+            }
+        }
+        if (email) {
+            delete global.resetCodes[email];
+
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+            await User.updateOne({ email }, { password: hashedPassword });
+
+            res.status(200).json({ success: true, message: 'Password reset successfully' });
+        } else {
+            res.status(400).json({ success: false, message: 'Invalid reset code' });
+        }
+    } catch (error) {
+        console.error('Error during password reset', error);
+        res.status(500).json({ error: 'Error during password reset' });
+    }
+}
+
+
+export { Register, Login,logout, verify, forgotPassword, resetPassword };
